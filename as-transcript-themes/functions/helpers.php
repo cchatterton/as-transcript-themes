@@ -222,11 +222,13 @@ function astt_theme_schema(): array
 {
     return array(
         'type' => 'object',
+        'additionalProperties' => false,
         'properties' => array(
             'themes' => array(
                 'type' => 'array',
                 'items' => array(
                     'type' => 'object',
+                    'additionalProperties' => false,
                     'properties' => array(
                         'name' => array('type' => 'string'),
                         'point_of_view' => array('type' => 'string'),
@@ -241,7 +243,7 @@ function astt_theme_schema(): array
                             'items' => array('type' => 'string'),
                         ),
                     ),
-                    'required' => array('name', 'point_of_view', 'importance', 'who', 'what', 'when', 'why', 'summary'),
+                    'required' => array('name', 'point_of_view', 'importance', 'who', 'what', 'when', 'why', 'summary', 'evidence'),
                 ),
             ),
         ),

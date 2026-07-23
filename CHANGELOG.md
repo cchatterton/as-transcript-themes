@@ -2,6 +2,11 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.1.5 - 2026-07-23
+
+- Made the AI structured-output schema strict by disallowing additional object properties.
+- Required every declared theme field in the schema so OpenAI structured outputs can validate the response format.
+
 ## 0.1.4 - 2026-07-23
 
 - Removed the pre-flight AI text support check that could report false unavailable status even when a connector was configured.
