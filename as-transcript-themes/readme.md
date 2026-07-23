@@ -1,12 +1,12 @@
 # AS Transcript Themes
 
 Author: AlphaSys  
-Version: 0.1.6  
+Version: 0.2.0  
 Status: MVP
 
 ## Purpose
 
-Identifies durable themes from meeting transcripts and email threads using the WordPress 7 AI Client.
+Identifies topics, themes, and commitments from meeting transcripts and email threads using the WordPress 7 AI Client.
 
 ## Notes
 

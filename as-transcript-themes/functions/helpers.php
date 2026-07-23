@@ -52,6 +52,19 @@ function astt_theme_details(int $post_id): array
     return is_array($details) ? $details : array();
 }
 
+function astt_supported_post_types(): array
+{
+    return array(
+        ASTT_TRANSCRIPT_POST_TYPE,
+        ASTT_EMAIL_POST_TYPE,
+        ASTT_THEME_POST_TYPE,
+        ASTT_BIG_THEME_POST_TYPE,
+        ASTT_COMMITMENT_POST_TYPE,
+        ASTT_CONTACT_POST_TYPE,
+        ASTT_ORG_POST_TYPE,
+    );
+}
+
 function astt_sanitize_people(array $rows): array
 {
     $clean = array();
@@ -218,13 +231,21 @@ function astt_processing_hash(WP_Post $post): string
     )));
 }
 
+function astt_string_array_schema(): array
+{
+    return array(
+        'type' => 'array',
+        'items' => array('type' => 'string'),
+    );
+}
+
 function astt_theme_schema(): array
 {
     return array(
         'type' => 'object',
         'additionalProperties' => false,
         'properties' => array(
-            'themes' => array(
+            'topics' => array(
                 'type' => 'array',
                 'items' => array(
                     'type' => 'object',
@@ -238,16 +259,47 @@ function astt_theme_schema(): array
                         'when' => array('type' => 'string'),
                         'why' => array('type' => 'string'),
                         'summary' => array('type' => 'string'),
-                        'evidence' => array(
-                            'type' => 'array',
-                            'items' => array('type' => 'string'),
-                        ),
+                        'evidence' => astt_string_array_schema(),
                     ),
                     'required' => array('name', 'point_of_view', 'importance', 'who', 'what', 'when', 'why', 'summary', 'evidence'),
                 ),
             ),
+            'themes' => array(
+                'type' => 'array',
+                'items' => array(
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => array(
+                        'name' => array('type' => 'string'),
+                        'point_of_view' => array('type' => 'string'),
+                        'summary' => array('type' => 'string'),
+                        'importance' => array('type' => 'string'),
+                        'related_topics' => astt_string_array_schema(),
+                        'evidence' => astt_string_array_schema(),
+                    ),
+                    'required' => array('name', 'point_of_view', 'summary', 'importance', 'related_topics', 'evidence'),
+                ),
+            ),
+            'commitments' => array(
+                'type' => 'array',
+                'items' => array(
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'properties' => array(
+                        'title' => array('type' => 'string'),
+                        'direction' => array('type' => 'string'),
+                        'status' => array('type' => 'string'),
+                        'summary' => array('type' => 'string'),
+                        'who' => array('type' => 'string'),
+                        'due' => array('type' => 'string'),
+                        'importance' => array('type' => 'string'),
+                        'evidence' => astt_string_array_schema(),
+                    ),
+                    'required' => array('title', 'direction', 'status', 'summary', 'who', 'due', 'importance', 'evidence'),
+                ),
+            ),
         ),
-        'required' => array('themes'),
+        'required' => array('topics', 'themes', 'commitments'),
     );
 }
 
@@ -263,9 +315,12 @@ function astt_build_prompt(WP_Post $post): string
     $source_label = ASTT_EMAIL_POST_TYPE === $post->post_type ? 'email thread' : 'meeting transcript';
 
     return implode("\n\n", array(
-        'You identify durable discussion themes from ' . $source_label . 's.',
-        'Find only the big themes that matter across the conversation. Do not list every topic. Demote passing speculation, short tangents, logistics, and items that did not get meaningful attention. Promote topics that recur, carry decisions, reveal tension, show customer need, or shape a point of view. Merge overlapping themes into one stronger theme.',
-        'For each theme, provide a concise title, a researched/considered point of view suitable for the Theme post body, and short narrative who/what/when/why details grounded in the source.',
+        'You identify topics, umbrella themes, and commitments from ' . $source_label . 's.',
+        'Topics are concrete discussion items, findings, risks, decisions, recommendations, or issues. Keep them useful and specific. Do not include every passing tangent.',
+        'Themes are reusable umbrella concepts that topics roll up into, such as PII, contact merging, data security, access control, governance, or operating model uncertainty.',
+        'Commitments are inferred actions or expectations. Direction must be me_to_them when I owe the other party, or them_to_me when someone else owes me. Status should be open, apparently_complete, complete, or dismissed. Prefer apparently_complete when the source appears to close an existing commitment but a human should confirm.',
+        'Avoid duplicate commitments. If a commitment appears repeated or completed, describe that same commitment rather than creating a subtly different one.',
+        'For topics and themes, provide a concise title, a point of view suitable for the post body, and grounded narrative details.',
         'Source type: ' . $source_label,
         'Source title: ' . $post->post_title,
         'Source when: ' . (astt_transcript_when($post->ID) ?: 'Not supplied'),
@@ -310,10 +365,10 @@ function astt_process_source(int $post_id, bool $force = false): void
     }
 
     update_post_meta($post_id, '_astt_status', 'processing');
-    update_post_meta($post_id, '_astt_status_message', __('Processing source themes.', 'as-transcript-themes'));
+    update_post_meta($post_id, '_astt_status_message', __('Processing source topics, themes, and commitments.', 'as-transcript-themes'));
 
     $json = wp_ai_client_prompt(astt_build_prompt($post))
-        ->using_system_instruction('Return only structured JSON that matches the supplied schema. Be selective. Identify durable themes, not all topics.')
+        ->using_system_instruction('Return only structured JSON that matches the supplied schema. Be selective and avoid duplicates.')
         ->as_json_response(astt_theme_schema())
         ->generate_text();
 
@@ -324,25 +379,28 @@ function astt_process_source(int $post_id, bool $force = false): void
     }
 
     $data = json_decode((string) $json, true);
-    if (!is_array($data) || !isset($data['themes']) || !is_array($data['themes'])) {
+    if (!is_array($data) || !isset($data['topics'], $data['themes'], $data['commitments']) || !is_array($data['topics']) || !is_array($data['themes']) || !is_array($data['commitments'])) {
         update_post_meta($post_id, '_astt_status', 'error');
-        update_post_meta($post_id, '_astt_status_message', __('The AI response was not valid theme JSON.', 'as-transcript-themes'));
+        update_post_meta($post_id, '_astt_status_message', __('The AI response was not valid workspace JSON.', 'as-transcript-themes'));
         return;
     }
 
-    $count = astt_apply_themes($post, $data['themes']);
+    astt_connect_source_entities($post);
+    $topic_ids = astt_apply_topics($post, $data['topics']);
+    $theme_count = astt_apply_big_themes($post, $data['themes'], $topic_ids);
+    $commitment_count = astt_apply_commitments($post, $data['commitments'], $topic_ids);
     astt_rank_themes();
     update_post_meta($post_id, '_astt_processed_hash', $hash);
     update_post_meta($post_id, '_astt_processed_at', gmdate('c'));
     update_post_meta($post_id, '_astt_status', 'complete');
-    update_post_meta($post_id, '_astt_status_message', sprintf(__('%d themes processed.', 'as-transcript-themes'), $count));
+    update_post_meta($post_id, '_astt_status_message', sprintf(__('%d topics, %d themes, and %d commitments processed.', 'as-transcript-themes'), count($topic_ids), $theme_count, $commitment_count));
 }
 
-function astt_apply_themes(WP_Post $source, array $themes): int
+function astt_apply_topics(WP_Post $source, array $topics): array
 {
-    $count = 0;
+    $topic_ids = array();
 
-    foreach ($themes as $theme) {
+    foreach ($topics as $theme) {
         if (!is_array($theme)) {
             continue;
         }
@@ -356,9 +414,10 @@ function astt_apply_themes(WP_Post $source, array $themes): int
         if (!$theme_id) {
             continue;
         }
+        $topic_ids[] = $theme_id;
 
         $body = astt_sanitize_ai_text((string) ($theme['point_of_view'] ?? ''), 6000);
-        if ('' !== $body) {
+        if ('' !== $body && '' === trim((string) get_post_field('post_content', $theme_id))) {
             wp_update_post(array(
                 'ID' => $theme_id,
                 'post_content' => $body,
@@ -378,10 +437,10 @@ function astt_apply_themes(WP_Post $source, array $themes): int
         update_post_meta($theme_id, '_astt_source_posts', array_values(array_unique($source_ids)));
         update_post_meta($theme_id, '_astt_last_seen_at', gmdate('c'));
 
-        $count++;
     }
 
-    return $count;
+    update_post_meta($source->ID, '_astt_theme_ids', array_values(array_unique(array_map('absint', $topic_ids))));
+    return array_values(array_unique(array_map('absint', $topic_ids)));
 }
 
 function astt_find_or_create_theme(string $name): int
@@ -412,6 +471,194 @@ function astt_find_or_create_theme(string $name): int
     }
 
     return $theme_id;
+}
+
+function astt_apply_big_themes(WP_Post $source, array $themes, array $topic_ids): int
+{
+    $count = 0;
+    $big_theme_ids = array();
+
+    foreach ($themes as $theme) {
+        if (!is_array($theme)) {
+            continue;
+        }
+
+        $name = astt_sanitize_ai_text((string) ($theme['name'] ?? ''), 120);
+        if ('' === $name) {
+            continue;
+        }
+
+        $theme_id = astt_find_or_create_big_theme($name);
+        if (!$theme_id) {
+            continue;
+        }
+
+        $body = astt_sanitize_ai_text((string) ($theme['point_of_view'] ?? ''), 6000);
+        if ('' !== $body && '' === trim((string) get_post_field('post_content', $theme_id))) {
+            wp_update_post(array(
+                'ID' => $theme_id,
+                'post_content' => $body,
+            ));
+        }
+
+        $details = astt_theme_details($theme_id);
+        $details[] = astt_big_theme_detail_from_ai($source, $theme);
+        update_post_meta($theme_id, '_astt_details', array_slice($details, -50));
+        update_post_meta($theme_id, '_astt_last_seen_at', gmdate('c'));
+
+        astt_add_related_id($theme_id, '_astt_source_posts', $source->ID);
+        astt_add_related_ids($theme_id, '_astt_topic_ids', $topic_ids);
+        astt_connect_workspace_entities($theme_id, $source->ID);
+
+        foreach ($topic_ids as $topic_id) {
+            astt_add_related_id(absint($topic_id), '_astt_big_theme_ids', $theme_id);
+        }
+
+        $big_theme_ids[] = $theme_id;
+        $count++;
+    }
+
+    astt_add_related_ids($source->ID, '_astt_big_theme_ids', $big_theme_ids);
+    return $count;
+}
+
+function astt_find_or_create_big_theme(string $name): int
+{
+    return astt_find_or_create_workspace(ASTT_BIG_THEME_POST_TYPE, '_astt_big_theme_key', $name);
+}
+
+function astt_apply_commitments(WP_Post $source, array $commitments, array $topic_ids): int
+{
+    $count = 0;
+    $commitment_ids = array();
+
+    foreach ($commitments as $commitment) {
+        if (!is_array($commitment)) {
+            continue;
+        }
+
+        $title = astt_sanitize_ai_text((string) ($commitment['title'] ?? ''), 160);
+        if ('' === $title) {
+            continue;
+        }
+
+        $direction = astt_normalize_commitment_direction((string) ($commitment['direction'] ?? ''));
+        $status = astt_normalize_commitment_status((string) ($commitment['status'] ?? 'open'));
+        $commitment_id = astt_find_or_create_commitment($title, $direction);
+        if (!$commitment_id) {
+            continue;
+        }
+
+        $details = astt_theme_details($commitment_id);
+        $details[] = astt_commitment_detail_from_ai($source, $commitment);
+        update_post_meta($commitment_id, '_astt_details', array_slice($details, -50));
+        update_post_meta($commitment_id, '_astt_direction', $direction);
+        update_post_meta($commitment_id, '_astt_commitment_status', $status);
+        update_post_meta($commitment_id, '_astt_last_seen_at', gmdate('c'));
+
+        astt_add_related_id($commitment_id, '_astt_source_posts', $source->ID);
+        astt_add_related_ids($commitment_id, '_astt_topic_ids', $topic_ids);
+        astt_connect_workspace_entities($commitment_id, $source->ID);
+
+        foreach ($topic_ids as $topic_id) {
+            astt_add_related_id(absint($topic_id), '_astt_commitment_ids', $commitment_id);
+        }
+
+        $commitment_ids[] = $commitment_id;
+        $count++;
+    }
+
+    astt_add_related_ids($source->ID, '_astt_commitment_ids', $commitment_ids);
+    return $count;
+}
+
+function astt_find_or_create_commitment(string $title, string $direction): int
+{
+    $key = astt_commitment_key($title, $direction);
+    $existing = get_posts(array(
+        'post_type' => ASTT_COMMITMENT_POST_TYPE,
+        'post_status' => 'any',
+        'fields' => 'ids',
+        'posts_per_page' => 1,
+        'meta_key' => '_astt_commitment_key',
+        'meta_value' => $key,
+    ));
+
+    if (!empty($existing)) {
+        return (int) $existing[0];
+    }
+
+    $commitment_id = (int) wp_insert_post(array(
+        'post_type' => ASTT_COMMITMENT_POST_TYPE,
+        'post_status' => 'publish',
+        'post_title' => $title,
+        'post_content' => '',
+    ));
+
+    if ($commitment_id) {
+        update_post_meta($commitment_id, '_astt_commitment_key', $key);
+    }
+
+    return $commitment_id;
+}
+
+function astt_find_or_create_workspace(string $post_type, string $key_meta, string $name): int
+{
+    $key = sanitize_title($name);
+    if ('' === $key) {
+        return 0;
+    }
+
+    $existing = get_posts(array(
+        'post_type' => $post_type,
+        'post_status' => 'any',
+        'fields' => 'ids',
+        'posts_per_page' => 1,
+        'meta_key' => $key_meta,
+        'meta_value' => $key,
+    ));
+
+    if (!empty($existing)) {
+        return (int) $existing[0];
+    }
+
+    $post_id = (int) wp_insert_post(array(
+        'post_type' => $post_type,
+        'post_status' => 'publish',
+        'post_title' => $name,
+        'post_content' => '',
+    ));
+
+    if ($post_id) {
+        update_post_meta($post_id, $key_meta, $key);
+    }
+
+    return $post_id;
+}
+
+function astt_commitment_key(string $title, string $direction): string
+{
+    return $direction . ':' . sanitize_title($title);
+}
+
+function astt_normalize_commitment_direction(string $direction): string
+{
+    $direction = strtolower(trim($direction));
+    if (in_array($direction, array('them_to_me', 'expectation', 'owed_to_me', 'they_owe_me'), true)) {
+        return 'them_to_me';
+    }
+
+    return 'me_to_them';
+}
+
+function astt_normalize_commitment_status(string $status): string
+{
+    $status = strtolower(trim($status));
+    if (in_array($status, array('apparently_complete', 'complete', 'dismissed'), true)) {
+        return $status;
+    }
+
+    return 'open';
 }
 
 function astt_connect_source_entities(WP_Post $source): void
@@ -468,6 +715,23 @@ function astt_connect_theme_entities(int $theme_id, int $source_id): void
     }
 }
 
+function astt_connect_workspace_entities(int $post_id, int $source_id): void
+{
+    $contact_ids = get_post_meta($source_id, '_astt_contact_ids', true);
+    $org_ids = get_post_meta($source_id, '_astt_org_ids', true);
+
+    astt_add_related_ids($post_id, '_astt_contact_ids', is_array($contact_ids) ? $contact_ids : array());
+    astt_add_related_ids($post_id, '_astt_org_ids', is_array($org_ids) ? $org_ids : array());
+
+    foreach (is_array($contact_ids) ? $contact_ids : array() as $contact_id) {
+        astt_add_related_id(absint($contact_id), '_astt_workspace_ids', $post_id);
+    }
+
+    foreach (is_array($org_ids) ? $org_ids : array() as $org_id) {
+        astt_add_related_id(absint($org_id), '_astt_workspace_ids', $post_id);
+    }
+}
+
 function astt_add_related_id(int $post_id, string $meta_key, int $related_id): void
 {
     if (!$post_id || !$related_id) {
@@ -478,6 +742,13 @@ function astt_add_related_id(int $post_id, string $meta_key, int $related_id): v
     $ids = is_array($ids) ? $ids : array();
     $ids[] = $related_id;
     update_post_meta($post_id, $meta_key, array_values(array_unique(array_map('absint', $ids))));
+}
+
+function astt_add_related_ids(int $post_id, string $meta_key, array $related_ids): void
+{
+    foreach ($related_ids as $related_id) {
+        astt_add_related_id($post_id, $meta_key, absint($related_id));
+    }
 }
 
 function astt_find_or_create_contact(string $name, string $email = '', int $org_id = 0): int
@@ -620,6 +891,44 @@ function astt_related_theme_ids(int $post_id): array
     return array_values(array_unique(array_map('absint', $themes)));
 }
 
+function astt_related_big_theme_ids(int $post_id): array
+{
+    $ids = get_post_meta($post_id, '_astt_big_theme_ids', true);
+    if (is_array($ids)) {
+        return array_values(array_unique(array_map('absint', $ids)));
+    }
+
+    return astt_related_workspace_ids_by_type($post_id, ASTT_BIG_THEME_POST_TYPE);
+}
+
+function astt_related_commitment_ids(int $post_id): array
+{
+    $ids = get_post_meta($post_id, '_astt_commitment_ids', true);
+    if (is_array($ids)) {
+        return array_values(array_unique(array_map('absint', $ids)));
+    }
+
+    return astt_related_workspace_ids_by_type($post_id, ASTT_COMMITMENT_POST_TYPE);
+}
+
+function astt_related_topic_ids(int $post_id): array
+{
+    $ids = get_post_meta($post_id, '_astt_topic_ids', true);
+    return is_array($ids) ? array_values(array_unique(array_map('absint', $ids))) : array();
+}
+
+function astt_related_workspace_ids_by_type(int $post_id, string $post_type): array
+{
+    $ids = get_post_meta($post_id, '_astt_workspace_ids', true);
+    if (!is_array($ids)) {
+        return array();
+    }
+
+    return array_values(array_filter(array_unique(array_map('absint', $ids)), static function (int $id) use ($post_type): bool {
+        return $post_type === get_post_type($id);
+    }));
+}
+
 function astt_theme_detail_from_ai(WP_Post $source, array $theme): array
 {
     return array(
@@ -642,10 +951,47 @@ function astt_theme_detail_from_ai(WP_Post $source, array $theme): array
     );
 }
 
+function astt_big_theme_detail_from_ai(WP_Post $source, array $theme): array
+{
+    return array(
+        'source_id' => $source->ID,
+        'source_type' => $source->post_type,
+        'source_title' => get_the_title($source),
+        'processed_at' => gmdate('c'),
+        'summary' => astt_sanitize_ai_text((string) ($theme['summary'] ?? ''), 900),
+        'importance' => astt_sanitize_ai_text((string) ($theme['importance'] ?? ''), 400),
+        'related_topics' => array_map(static function ($item) {
+            return astt_sanitize_ai_text((string) $item, 160);
+        }, (array) ($theme['related_topics'] ?? array())),
+        'evidence' => array_map(static function ($item) {
+            return astt_sanitize_ai_text((string) $item, 260);
+        }, (array) ($theme['evidence'] ?? array())),
+    );
+}
+
+function astt_commitment_detail_from_ai(WP_Post $source, array $commitment): array
+{
+    return array(
+        'source_id' => $source->ID,
+        'source_type' => $source->post_type,
+        'source_title' => get_the_title($source),
+        'processed_at' => gmdate('c'),
+        'direction' => astt_normalize_commitment_direction((string) ($commitment['direction'] ?? '')),
+        'status' => astt_normalize_commitment_status((string) ($commitment['status'] ?? 'open')),
+        'summary' => astt_sanitize_ai_text((string) ($commitment['summary'] ?? ''), 900),
+        'who' => astt_sanitize_ai_text((string) ($commitment['who'] ?? ''), 300),
+        'due' => astt_sanitize_ai_text((string) ($commitment['due'] ?? ''), 120),
+        'importance' => astt_sanitize_ai_text((string) ($commitment['importance'] ?? ''), 400),
+        'evidence' => array_map(static function ($item) {
+            return astt_sanitize_ai_text((string) $item, 260);
+        }, (array) ($commitment['evidence'] ?? array())),
+    );
+}
+
 function astt_rank_themes(): int
 {
     $theme_ids = get_posts(array(
-        'post_type' => ASTT_THEME_POST_TYPE,
+        'post_type' => array(ASTT_THEME_POST_TYPE, ASTT_BIG_THEME_POST_TYPE, ASTT_COMMITMENT_POST_TYPE),
         'post_status' => 'any',
         'fields' => 'ids',
         'posts_per_page' => -1,
@@ -663,6 +1009,9 @@ function astt_rank_themes(): int
         $last_seen = (string) get_post_meta($theme_id, '_astt_last_seen_at', true);
 
         $score = (count($source_ids) * 100) + (count($details) * 10) + astt_recency_score($last_seen);
+        if (ASTT_COMMITMENT_POST_TYPE === get_post_type($theme_id) && in_array((string) get_post_meta($theme_id, '_astt_commitment_status', true), array('open', 'apparently_complete'), true)) {
+            $score += 40;
+        }
         $ranked[] = array(
             'id' => $theme_id,
             'score' => $score,

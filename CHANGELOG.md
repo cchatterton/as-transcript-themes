@@ -2,6 +2,16 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.2.0 - 2026-07-23
+
+- Renamed the generated discussion layer from Themes to Topics in the WordPress admin UI.
+- Added a separate Theme post type for higher-level umbrella concepts inferred from topics.
+- Added a Commitment post type for actions and expectations, with direction, status, source evidence, and duplicate prevention.
+- Extended AI processing so transcripts and email threads now create or update topics, themes, and commitments in one pass.
+- Added relationship navigation between sources, topics, themes, commitments, contacts, and organisations.
+- Added dashboard widgets for Top Topics, Top Themes, I Owe, and Owed To Me.
+- Updated workspace ranking to score topics, themes, and commitments together.
+
 ## 0.1.6 - 2026-07-23
 
 - Removed the explicit AI temperature setting because some connected models reject the parameter.

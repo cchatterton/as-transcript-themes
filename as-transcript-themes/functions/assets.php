@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 function astt_enqueue_admin_assets(string $hook): void
 {
     $screen = get_current_screen();
-    if (!$screen || !in_array($screen->post_type, array(ASTT_TRANSCRIPT_POST_TYPE, ASTT_EMAIL_POST_TYPE, ASTT_THEME_POST_TYPE, ASTT_CONTACT_POST_TYPE, ASTT_ORG_POST_TYPE), true)) {
+    if (!$screen || !in_array($screen->post_type, astt_supported_post_types(), true)) {
         return;
     }
 
