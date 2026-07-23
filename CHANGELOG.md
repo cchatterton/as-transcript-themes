@@ -2,6 +2,11 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.1.4 - 2026-07-23
+
+- Removed the pre-flight AI text support check that could report false unavailable status even when a connector was configured.
+- Changed processing to attempt the real AI Client generation request and surface the actual `WP_Error` message if generation fails.
+
 ## 0.1.3 - 2026-07-23
 
 - Simplified source editing so Transcript and Email post content is the main input area again.

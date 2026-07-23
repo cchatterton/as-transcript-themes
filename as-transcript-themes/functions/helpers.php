@@ -218,16 +218,6 @@ function astt_processing_hash(WP_Post $post): string
     )));
 }
 
-function astt_ai_available(): bool
-{
-    if (!function_exists('wp_ai_client_prompt')) {
-        return false;
-    }
-
-    $builder = wp_ai_client_prompt('Return the word ready.');
-    return is_object($builder) && method_exists($builder, 'is_supported_for_text_generation') && $builder->is_supported_for_text_generation();
-}
-
 function astt_theme_schema(): array
 {
     return array(
@@ -311,9 +301,9 @@ function astt_process_source(int $post_id, bool $force = false): void
         return;
     }
 
-    if (!astt_ai_available()) {
+    if (!function_exists('wp_ai_client_prompt')) {
         update_post_meta($post_id, '_astt_status', 'ai_unavailable');
-        update_post_meta($post_id, '_astt_status_message', __('WordPress AI text generation is not available. Configure an AI provider in Settings > Connectors.', 'as-transcript-themes'));
+        update_post_meta($post_id, '_astt_status_message', __('WordPress AI Client is not available. This plugin requires WordPress 7.0 or later with the AI Client enabled.', 'as-transcript-themes'));
         return;
     }
 
