@@ -2,6 +2,13 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.1.3 - 2026-07-23
+
+- Simplified source editing so Transcript and Email post content is the main input area again.
+- Removed unnecessary source-content, participant, email context, contact detail, organisation detail, and theme detail meta boxes.
+- Kept only Transcript Notes, source processing status, and clickable relationship sidebars.
+- Preserved old source-content meta as a fallback for records created in 0.1.2.
+
 ## 0.1.2 - 2026-07-23
 
 - Added dedicated source-content textareas for Transcript and Email records.

@@ -50,7 +50,7 @@ function astt_register_post_types(): void
         'show_in_menu' => true,
         'show_in_rest' => false,
         'menu_icon' => 'dashicons-media-text',
-        'supports' => array('title'),
+        'supports' => array('title', 'editor'),
         'capability_type' => 'post',
     ));
 
@@ -66,7 +66,7 @@ function astt_register_post_types(): void
         'show_in_menu' => true,
         'show_in_rest' => false,
         'menu_icon' => 'dashicons-email-alt2',
-        'supports' => array('title'),
+        'supports' => array('title', 'editor'),
         'capability_type' => 'post',
     ));
 

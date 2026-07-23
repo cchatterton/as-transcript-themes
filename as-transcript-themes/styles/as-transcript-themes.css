@@ -15,59 +15,10 @@
     max-width: 760px;
 }
 
-.astt-field .astt-source-content {
-    max-width: none;
-    width: 100%;
-    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-    white-space: pre-wrap;
-}
-
-.astt-repeater-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-    gap: 8px;
-    max-width: 860px;
-    margin-bottom: 8px;
-}
-
-.astt-theme-details {
-    display: grid;
-    gap: 12px;
-}
-
-.astt-theme-detail {
-    border: 1px solid #dcdcde;
-    background: #fff;
-    padding: 12px;
-}
-
-.astt-theme-detail h3 {
-    margin: 0 0 10px;
-}
-
-.astt-theme-detail dl {
-    display: grid;
-    grid-template-columns: 100px minmax(0, 1fr);
-    gap: 6px 12px;
-    margin: 0;
-}
-
-.astt-theme-detail dt {
-    font-weight: 600;
-}
-
-.astt-theme-detail dd {
-    margin: 0;
-}
-
 .astt-relationship-list {
     margin-top: 4px;
 }
 
 .astt-relationship-list li {
     margin-bottom: 4px;
-}
-
-.astt-people-table {
-    max-width: 860px;
 }

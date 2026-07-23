@@ -7,9 +7,9 @@ if (!defined('ABSPATH')) {
 function astt_register_meta_boxes(): void
 {
     add_meta_box(
-        'astt_transcript_context',
-        __('Transcript Context', 'as-transcript-themes'),
-        'astt_render_transcript_context_meta_box',
+        'astt_transcript_notes',
+        __('Notes', 'as-transcript-themes'),
+        'astt_render_transcript_notes_meta_box',
         ASTT_TRANSCRIPT_POST_TYPE,
         'normal',
         'high'
@@ -25,29 +25,11 @@ function astt_register_meta_boxes(): void
     );
 
     add_meta_box(
-        'astt_email_context',
-        __('Email Context', 'as-transcript-themes'),
-        'astt_render_email_context_meta_box',
-        ASTT_EMAIL_POST_TYPE,
-        'normal',
-        'high'
-    );
-
-    add_meta_box(
         'astt_email_processing',
         __('Theme Processing', 'as-transcript-themes'),
         'astt_render_email_processing_meta_box',
         ASTT_EMAIL_POST_TYPE,
         'side',
-        'high'
-    );
-
-    add_meta_box(
-        'astt_theme_details',
-        __('Theme Details', 'as-transcript-themes'),
-        'astt_render_theme_details_meta_box',
-        ASTT_THEME_POST_TYPE,
-        'normal',
         'high'
     );
 
@@ -62,23 +44,6 @@ function astt_register_meta_boxes(): void
         );
     }
 
-    add_meta_box(
-        'astt_contact_details',
-        __('Contact Details', 'as-transcript-themes'),
-        'astt_render_contact_details_meta_box',
-        ASTT_CONTACT_POST_TYPE,
-        'normal',
-        'high'
-    );
-
-    add_meta_box(
-        'astt_org_details',
-        __('Organisation Details', 'as-transcript-themes'),
-        'astt_render_org_details_meta_box',
-        ASTT_ORG_POST_TYPE,
-        'normal',
-        'high'
-    );
 }
 
 function astt_register_admin_menu(): void
@@ -166,105 +131,13 @@ function astt_render_theme_ranking_page(): void
     <?php
 }
 
-function astt_render_transcript_context_meta_box(WP_Post $post): void
+function astt_render_transcript_notes_meta_box(WP_Post $post): void
 {
     wp_nonce_field('astt_save_transcript_meta', 'astt_transcript_nonce');
-
-    $when = astt_transcript_when($post->ID);
     $notes = astt_transcript_notes($post->ID);
-    $source_content = astt_source_content($post);
-    $people = astt_transcript_people($post->ID);
-    if (empty($people)) {
-        $people = array(array('who' => '', 'from' => ''));
-    }
     ?>
     <div class="astt-field">
-        <label for="astt_source_content"><?php esc_html_e('Transcript', 'as-transcript-themes'); ?></label>
-        <textarea id="astt_source_content" name="astt_source_content" rows="18" class="astt-source-content"><?php echo esc_textarea($source_content); ?></textarea>
-        <p class="description"><?php esc_html_e('Paste the full transcript here. This is the content the theme processor reads.', 'as-transcript-themes'); ?></p>
-    </div>
-
-    <div class="astt-field">
-        <label for="astt_when"><?php esc_html_e('When', 'as-transcript-themes'); ?></label>
-        <input type="datetime-local" id="astt_when" name="astt_when" value="<?php echo esc_attr(astt_datetime_for_input($when)); ?>">
-    </div>
-
-    <div class="astt-field">
-        <label><?php esc_html_e('Who from where', 'as-transcript-themes'); ?></label>
-        <div class="astt-repeater" data-astt-repeater>
-            <?php foreach ($people as $index => $person) : ?>
-                <div class="astt-repeater-row" data-astt-row>
-                    <input type="text" name="astt_people[<?php echo esc_attr((string) $index); ?>][who]" value="<?php echo esc_attr((string) ($person['who'] ?? '')); ?>" placeholder="<?php esc_attr_e('Who', 'as-transcript-themes'); ?>">
-                    <input type="text" name="astt_people[<?php echo esc_attr((string) $index); ?>][from]" value="<?php echo esc_attr((string) ($person['from'] ?? '')); ?>" placeholder="<?php esc_attr_e('From where', 'as-transcript-themes'); ?>">
-                    <button type="button" class="button astt-remove-row" data-astt-remove-row><?php esc_html_e('Remove', 'as-transcript-themes'); ?></button>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <button type="button" class="button" data-astt-add-row><?php esc_html_e('Add person', 'as-transcript-themes'); ?></button>
-    </div>
-
-    <div class="astt-field">
-        <label for="astt_notes"><?php esc_html_e('Meeting notes', 'as-transcript-themes'); ?></label>
-        <textarea id="astt_notes" name="astt_notes" rows="7"><?php echo esc_textarea($notes); ?></textarea>
-        <p class="description"><?php esc_html_e('Use notes to influence which themes matter, what was important, and what should be ignored.', 'as-transcript-themes'); ?></p>
-    </div>
-    <?php
-}
-
-function astt_render_email_context_meta_box(WP_Post $post): void
-{
-    wp_nonce_field('astt_save_email_meta', 'astt_email_nonce');
-
-    $when = astt_transcript_when($post->ID);
-    $notes = astt_transcript_notes($post->ID);
-    $source_content = astt_source_content($post);
-    $people = astt_email_people($post->ID);
-    if (empty($people) && '' !== trim(wp_strip_all_tags($source_content))) {
-        $people = astt_extract_email_people(wp_strip_all_tags($source_content));
-    }
-    ?>
-    <div class="astt-field">
-        <label for="astt_source_content"><?php esc_html_e('Email thread', 'as-transcript-themes'); ?></label>
-        <textarea id="astt_source_content" name="astt_source_content" rows="18" class="astt-source-content"><?php echo esc_textarea($source_content); ?></textarea>
-        <p class="description"><?php esc_html_e('Paste the full email thread here. This is the content the theme processor reads and the people extractor scans.', 'as-transcript-themes'); ?></p>
-    </div>
-
-    <div class="astt-field">
-        <label for="astt_when"><?php esc_html_e('When', 'as-transcript-themes'); ?></label>
-        <input type="datetime-local" id="astt_when" name="astt_when" value="<?php echo esc_attr(astt_datetime_for_input($when)); ?>">
-    </div>
-
-    <div class="astt-field">
-        <label for="astt_notes"><?php esc_html_e('Thread notes', 'as-transcript-themes'); ?></label>
-        <textarea id="astt_notes" name="astt_notes" rows="5"><?php echo esc_textarea($notes); ?></textarea>
-        <p class="description"><?php esc_html_e('Use notes to influence which email-thread themes matter, what was important, and what should be ignored.', 'as-transcript-themes'); ?></p>
-    </div>
-
-    <div class="astt-field">
-        <label><?php esc_html_e('Extracted people and organisations', 'as-transcript-themes'); ?></label>
-        <?php if (empty($people)) : ?>
-            <p><?php esc_html_e('No email addresses found yet. Paste the email thread into the editor and save.', 'as-transcript-themes'); ?></p>
-        <?php else : ?>
-            <table class="widefat striped astt-people-table">
-                <thead>
-                    <tr>
-                        <th><?php esc_html_e('Who', 'as-transcript-themes'); ?></th>
-                        <th><?php esc_html_e('Organisation', 'as-transcript-themes'); ?></th>
-                        <th><?php esc_html_e('Email', 'as-transcript-themes'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($people as $person) : ?>
-                        <tr>
-                            <td><?php echo esc_html((string) ($person['who'] ?? '')); ?></td>
-                            <td><?php echo esc_html((string) ($person['from'] ?? '')); ?></td>
-                            <td><?php echo esc_html((string) ($person['email'] ?? '')); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
-        <p class="description"><?php esc_html_e('Email participants are extracted from pasted email addresses. Domains become organisation clues.', 'as-transcript-themes'); ?></p>
+        <textarea id="astt_notes" name="astt_notes" rows="6"><?php echo esc_textarea($notes); ?></textarea>
     </div>
     <?php
 }
@@ -293,43 +166,6 @@ function astt_render_relationships_meta_box(WP_Post $post): void
         <?php astt_render_relationship_list(__('Contacts', 'as-transcript-themes'), $contact_ids); ?>
         <?php astt_render_relationship_list(__('Organisations', 'as-transcript-themes'), $org_ids); ?>
     </div>
-    <?php
-}
-
-function astt_render_contact_details_meta_box(WP_Post $post): void
-{
-    $email = (string) get_post_meta($post->ID, '_astt_email', true);
-    $org_id = absint(get_post_meta($post->ID, '_astt_org_id', true));
-    ?>
-    <table class="form-table">
-        <tr>
-            <th><?php esc_html_e('Email', 'as-transcript-themes'); ?></th>
-            <td><?php echo esc_html($email ?: __('Not known', 'as-transcript-themes')); ?></td>
-        </tr>
-        <tr>
-            <th><?php esc_html_e('Organisation', 'as-transcript-themes'); ?></th>
-            <td>
-                <?php if ($org_id) : ?>
-                    <a href="<?php echo esc_url(get_edit_post_link($org_id)); ?>"><?php echo esc_html(get_the_title($org_id)); ?></a>
-                <?php else : ?>
-                    <?php esc_html_e('Not known', 'as-transcript-themes'); ?>
-                <?php endif; ?>
-            </td>
-        </tr>
-    </table>
-    <?php
-}
-
-function astt_render_org_details_meta_box(WP_Post $post): void
-{
-    $domain = (string) get_post_meta($post->ID, '_astt_domain', true);
-    ?>
-    <table class="form-table">
-        <tr>
-            <th><?php esc_html_e('Domain', 'as-transcript-themes'); ?></th>
-            <td><?php echo esc_html($domain ?: __('Not known', 'as-transcript-themes')); ?></td>
-        </tr>
-    </table>
     <?php
 }
 
@@ -382,42 +218,6 @@ function astt_render_source_processing_meta_box(WP_Post $post, string $button_la
     <?php
 }
 
-function astt_render_theme_details_meta_box(WP_Post $post): void
-{
-    $details = astt_theme_details($post->ID);
-    $source_ids = astt_related_source_ids($post->ID);
-    ?>
-    <p>
-        <strong><?php esc_html_e('Sources', 'as-transcript-themes'); ?></strong>
-        <?php echo esc_html((string) count($source_ids)); ?>
-    </p>
-
-    <?php if (empty($details)) : ?>
-        <p><?php esc_html_e('No source details have been attached yet.', 'as-transcript-themes'); ?></p>
-    <?php else : ?>
-        <div class="astt-theme-details">
-            <?php foreach (array_reverse($details) as $detail) : ?>
-                <section class="astt-theme-detail">
-                    <h3><?php echo esc_html((string) ($detail['source_title'] ?? $detail['transcript_title'] ?? __('Source', 'as-transcript-themes'))); ?></h3>
-                    <dl>
-                        <dt><?php esc_html_e('Who', 'as-transcript-themes'); ?></dt>
-                        <dd><?php echo esc_html((string) ($detail['who'] ?? '')); ?></dd>
-                        <dt><?php esc_html_e('What', 'as-transcript-themes'); ?></dt>
-                        <dd><?php echo esc_html((string) ($detail['what'] ?? '')); ?></dd>
-                        <dt><?php esc_html_e('When', 'as-transcript-themes'); ?></dt>
-                        <dd><?php echo esc_html((string) ($detail['when'] ?? '')); ?></dd>
-                        <dt><?php esc_html_e('Why', 'as-transcript-themes'); ?></dt>
-                        <dd><?php echo esc_html((string) ($detail['why'] ?? '')); ?></dd>
-                        <dt><?php esc_html_e('Summary', 'as-transcript-themes'); ?></dt>
-                        <dd><?php echo esc_html((string) ($detail['summary'] ?? '')); ?></dd>
-                    </dl>
-                </section>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-    <?php
-}
-
 function astt_save_transcript(int $post_id, WP_Post $post): void
 {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
@@ -428,19 +228,10 @@ function astt_save_transcript(int $post_id, WP_Post $post): void
         return;
     }
 
-    if (empty($_POST['astt_transcript_nonce']) || !wp_verify_nonce((string) $_POST['astt_transcript_nonce'], 'astt_save_transcript_meta')) {
-        return;
+    if (!empty($_POST['astt_transcript_nonce']) && wp_verify_nonce((string) $_POST['astt_transcript_nonce'], 'astt_save_transcript_meta')) {
+        $notes = sanitize_textarea_field((string) wp_unslash($_POST['astt_notes'] ?? ''));
+        update_post_meta($post_id, '_astt_notes', $notes);
     }
-
-    $when = sanitize_text_field((string) wp_unslash($_POST['astt_when'] ?? ''));
-    $notes = sanitize_textarea_field((string) wp_unslash($_POST['astt_notes'] ?? ''));
-    $source_content = sanitize_textarea_field((string) wp_unslash($_POST['astt_source_content'] ?? ''));
-    $people = astt_sanitize_people((array) wp_unslash($_POST['astt_people'] ?? array()));
-
-    update_post_meta($post_id, '_astt_when', $when);
-    update_post_meta($post_id, '_astt_notes', $notes);
-    update_post_meta($post_id, '_astt_source_content', $source_content);
-    update_post_meta($post_id, '_astt_people', $people);
 
     if (in_array($post->post_status, array('auto-draft', 'trash'), true)) {
         return;
@@ -461,18 +252,7 @@ function astt_save_email(int $post_id, WP_Post $post): void
         return;
     }
 
-    if (empty($_POST['astt_email_nonce']) || !wp_verify_nonce((string) $_POST['astt_email_nonce'], 'astt_save_email_meta')) {
-        return;
-    }
-
-    $when = sanitize_text_field((string) wp_unslash($_POST['astt_when'] ?? ''));
-    $notes = sanitize_textarea_field((string) wp_unslash($_POST['astt_notes'] ?? ''));
-    $source_content = sanitize_textarea_field((string) wp_unslash($_POST['astt_source_content'] ?? ''));
-    $people = astt_extract_email_people(wp_strip_all_tags($source_content));
-
-    update_post_meta($post_id, '_astt_when', $when);
-    update_post_meta($post_id, '_astt_notes', $notes);
-    update_post_meta($post_id, '_astt_source_content', $source_content);
+    $people = astt_extract_email_people(wp_strip_all_tags($post->post_content));
     update_post_meta($post_id, '_astt_people', $people);
 
     if (in_array($post->post_status, array('auto-draft', 'trash'), true)) {

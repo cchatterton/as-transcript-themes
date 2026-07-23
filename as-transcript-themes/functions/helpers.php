@@ -16,12 +16,12 @@ function astt_transcript_notes(int $post_id): string
 
 function astt_source_content(WP_Post $post): string
 {
-    $content = (string) get_post_meta($post->ID, '_astt_source_content', true);
+    $content = (string) $post->post_content;
     if ('' !== trim($content)) {
         return $content;
     }
 
-    return (string) $post->post_content;
+    return (string) get_post_meta($post->ID, '_astt_source_content', true);
 }
 
 function astt_transcript_people(int $post_id): array
