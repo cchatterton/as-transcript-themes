@@ -2,6 +2,10 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.1.6 - 2026-07-23
+
+- Removed the explicit AI temperature setting because some connected models reject the parameter.
+
 ## 0.1.5 - 2026-07-23
 
 - Made the AI structured-output schema strict by disallowing additional object properties.

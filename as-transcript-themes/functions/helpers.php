@@ -313,7 +313,6 @@ function astt_process_source(int $post_id, bool $force = false): void
     update_post_meta($post_id, '_astt_status_message', __('Processing source themes.', 'as-transcript-themes'));
 
     $json = wp_ai_client_prompt(astt_build_prompt($post))
-        ->using_temperature(0.2)
         ->using_system_instruction('Return only structured JSON that matches the supplied schema. Be selective. Identify durable themes, not all topics.')
         ->as_json_response(astt_theme_schema())
         ->generate_text();
