@@ -172,11 +172,18 @@ function astt_render_transcript_context_meta_box(WP_Post $post): void
 
     $when = astt_transcript_when($post->ID);
     $notes = astt_transcript_notes($post->ID);
+    $source_content = astt_source_content($post);
     $people = astt_transcript_people($post->ID);
     if (empty($people)) {
         $people = array(array('who' => '', 'from' => ''));
     }
     ?>
+    <div class="astt-field">
+        <label for="astt_source_content"><?php esc_html_e('Transcript', 'as-transcript-themes'); ?></label>
+        <textarea id="astt_source_content" name="astt_source_content" rows="18" class="astt-source-content"><?php echo esc_textarea($source_content); ?></textarea>
+        <p class="description"><?php esc_html_e('Paste the full transcript here. This is the content the theme processor reads.', 'as-transcript-themes'); ?></p>
+    </div>
+
     <div class="astt-field">
         <label for="astt_when"><?php esc_html_e('When', 'as-transcript-themes'); ?></label>
         <input type="datetime-local" id="astt_when" name="astt_when" value="<?php echo esc_attr(astt_datetime_for_input($when)); ?>">
@@ -210,11 +217,18 @@ function astt_render_email_context_meta_box(WP_Post $post): void
 
     $when = astt_transcript_when($post->ID);
     $notes = astt_transcript_notes($post->ID);
+    $source_content = astt_source_content($post);
     $people = astt_email_people($post->ID);
-    if (empty($people) && '' !== trim(wp_strip_all_tags($post->post_content))) {
-        $people = astt_extract_email_people(wp_strip_all_tags($post->post_content));
+    if (empty($people) && '' !== trim(wp_strip_all_tags($source_content))) {
+        $people = astt_extract_email_people(wp_strip_all_tags($source_content));
     }
     ?>
+    <div class="astt-field">
+        <label for="astt_source_content"><?php esc_html_e('Email thread', 'as-transcript-themes'); ?></label>
+        <textarea id="astt_source_content" name="astt_source_content" rows="18" class="astt-source-content"><?php echo esc_textarea($source_content); ?></textarea>
+        <p class="description"><?php esc_html_e('Paste the full email thread here. This is the content the theme processor reads and the people extractor scans.', 'as-transcript-themes'); ?></p>
+    </div>
+
     <div class="astt-field">
         <label for="astt_when"><?php esc_html_e('When', 'as-transcript-themes'); ?></label>
         <input type="datetime-local" id="astt_when" name="astt_when" value="<?php echo esc_attr(astt_datetime_for_input($when)); ?>">
@@ -420,10 +434,12 @@ function astt_save_transcript(int $post_id, WP_Post $post): void
 
     $when = sanitize_text_field((string) wp_unslash($_POST['astt_when'] ?? ''));
     $notes = sanitize_textarea_field((string) wp_unslash($_POST['astt_notes'] ?? ''));
+    $source_content = sanitize_textarea_field((string) wp_unslash($_POST['astt_source_content'] ?? ''));
     $people = astt_sanitize_people((array) wp_unslash($_POST['astt_people'] ?? array()));
 
     update_post_meta($post_id, '_astt_when', $when);
     update_post_meta($post_id, '_astt_notes', $notes);
+    update_post_meta($post_id, '_astt_source_content', $source_content);
     update_post_meta($post_id, '_astt_people', $people);
 
     if (in_array($post->post_status, array('auto-draft', 'trash'), true)) {
@@ -451,10 +467,12 @@ function astt_save_email(int $post_id, WP_Post $post): void
 
     $when = sanitize_text_field((string) wp_unslash($_POST['astt_when'] ?? ''));
     $notes = sanitize_textarea_field((string) wp_unslash($_POST['astt_notes'] ?? ''));
-    $people = astt_extract_email_people(wp_strip_all_tags($post->post_content));
+    $source_content = sanitize_textarea_field((string) wp_unslash($_POST['astt_source_content'] ?? ''));
+    $people = astt_extract_email_people(wp_strip_all_tags($source_content));
 
     update_post_meta($post_id, '_astt_when', $when);
     update_post_meta($post_id, '_astt_notes', $notes);
+    update_post_meta($post_id, '_astt_source_content', $source_content);
     update_post_meta($post_id, '_astt_people', $people);
 
     if (in_array($post->post_status, array('auto-draft', 'trash'), true)) {

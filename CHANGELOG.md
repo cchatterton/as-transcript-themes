@@ -2,6 +2,13 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.1.2 - 2026-07-23
+
+- Added dedicated source-content textareas for Transcript and Email records.
+- Made source-content meta the canonical content processed by the AI theme extractor.
+- Removed the main editor body from Transcript and Email source capture screens.
+- Kept old editor content as a fallback for records created before this release.
+
 ## 0.1.1 - 2026-07-23
 
 - Separated Transcripts, Emails, Themes, Contacts, and Organisations into their own WordPress admin menus.

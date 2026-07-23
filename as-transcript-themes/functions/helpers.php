@@ -14,6 +14,16 @@ function astt_transcript_notes(int $post_id): string
     return (string) get_post_meta($post_id, '_astt_notes', true);
 }
 
+function astt_source_content(WP_Post $post): string
+{
+    $content = (string) get_post_meta($post->ID, '_astt_source_content', true);
+    if ('' !== trim($content)) {
+        return $content;
+    }
+
+    return (string) $post->post_content;
+}
+
 function astt_transcript_people(int $post_id): array
 {
     $people = get_post_meta($post_id, '_astt_people', true);
@@ -107,7 +117,7 @@ function astt_ensure_source_title(int $post_id): void
 
 function astt_generate_source_title(WP_Post $post): string
 {
-    $content = trim(wp_strip_all_tags($post->post_content));
+    $content = trim(wp_strip_all_tags(astt_source_content($post)));
     if (ASTT_EMAIL_POST_TYPE === $post->post_type) {
         return astt_generate_email_title($post, $content);
     }
@@ -201,7 +211,7 @@ function astt_processing_hash(WP_Post $post): string
     return hash('sha256', wp_json_encode(array(
         'type' => $post->post_type,
         'title' => $post->post_title,
-        'content' => $post->post_content,
+        'content' => astt_source_content($post),
         'when' => astt_transcript_when($post->ID),
         'notes' => astt_transcript_notes($post->ID),
         'people' => astt_source_people($post->ID),
@@ -269,7 +279,7 @@ function astt_build_prompt(WP_Post $post): string
         'Source when: ' . (astt_transcript_when($post->ID) ?: 'Not supplied'),
         "People and organisations:\n" . (!empty($people_lines) ? implode("\n", $people_lines) : 'Not supplied'),
         "Source notes:\n" . (astt_transcript_notes($post->ID) ?: 'Not supplied'),
-        "Source content:\n" . wp_strip_all_tags($post->post_content),
+        "Source content:\n" . wp_strip_all_tags(astt_source_content($post)),
     ));
 }
 
@@ -290,7 +300,7 @@ function astt_process_source(int $post_id, bool $force = false): void
         return;
     }
 
-    if ('' === trim(wp_strip_all_tags($post->post_content))) {
+    if ('' === trim(wp_strip_all_tags(astt_source_content($post)))) {
         update_post_meta($post_id, '_astt_status', 'skipped_empty');
         update_post_meta($post_id, '_astt_status_message', __('No source content to process.', 'as-transcript-themes'));
         return;
