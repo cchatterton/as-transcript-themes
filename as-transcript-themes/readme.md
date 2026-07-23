@@ -1,7 +1,7 @@
 # AS Transcript Themes
 
 Author: AlphaSys  
-Version: 0.1.0  
+Version: 0.1.1  
 Status: MVP
 
 ## Purpose
@@ -13,3 +13,4 @@ Identifies durable themes from meeting transcripts and email threads using the W
 - Requires WordPress 7.0 or later.
 - Requires a configured AI provider through Settings > Connectors.
 - Transcript and Email saves process changed content automatically.
+- Transcript and Email editors use the classic editor and can auto-generate titles.

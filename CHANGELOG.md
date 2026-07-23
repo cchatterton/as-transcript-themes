@@ -2,6 +2,13 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.1.1 - 2026-07-23
+
+- Separated Transcripts, Emails, Themes, Contacts, and Organisations into their own WordPress admin menus.
+- Disabled the block editor for Transcript and Email source capture.
+- Added automatic source title generation so transcript and email sources can be saved without manually entering a post title.
+- Moved Theme Ranking under the Themes admin menu.
+
 ## 0.1.0 - 2026-07-21
 
 - Added Transcript and Theme custom post types.

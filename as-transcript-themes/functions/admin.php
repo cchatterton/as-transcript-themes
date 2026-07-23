@@ -84,7 +84,7 @@ function astt_register_meta_boxes(): void
 function astt_register_admin_menu(): void
 {
     add_submenu_page(
-        'edit.php?post_type=' . ASTT_TRANSCRIPT_POST_TYPE,
+        'edit.php?post_type=' . ASTT_THEME_POST_TYPE,
         __('Theme Ranking', 'as-transcript-themes'),
         __('Theme Ranking', 'as-transcript-themes'),
         'edit_posts',
@@ -107,7 +107,7 @@ function astt_handle_theme_ranking_action(): void
     $count = astt_rank_themes();
     astt_queue_admin_notice(sprintf(__('%d themes rescored.', 'as-transcript-themes'), $count));
 
-    wp_safe_redirect(admin_url('edit.php?post_type=' . ASTT_TRANSCRIPT_POST_TYPE . '&page=astt-theme-ranking'));
+    wp_safe_redirect(admin_url('edit.php?post_type=' . ASTT_THEME_POST_TYPE . '&page=astt-theme-ranking'));
     exit;
 }
 
@@ -430,6 +430,7 @@ function astt_save_transcript(int $post_id, WP_Post $post): void
         return;
     }
 
+    astt_ensure_source_title($post_id);
     astt_process_transcript($post_id, !empty($_POST['astt_reprocess']));
     astt_queue_admin_notice((string) get_post_meta($post_id, '_astt_status_message', true));
 }
@@ -460,6 +461,7 @@ function astt_save_email(int $post_id, WP_Post $post): void
         return;
     }
 
+    astt_ensure_source_title($post_id);
     astt_process_email($post_id, !empty($_POST['astt_reprocess']));
     astt_queue_admin_notice((string) get_post_meta($post_id, '_astt_status_message', true));
 }

@@ -73,6 +73,129 @@ function astt_sanitize_ai_text(string $value, int $max_length = 1200): string
     return substr($value, 0, $max_length);
 }
 
+function astt_ensure_source_title(int $post_id): void
+{
+    static $updating = false;
+
+    if ($updating) {
+        return;
+    }
+
+    $post = get_post($post_id);
+    if (!$post instanceof WP_Post || !in_array($post->post_type, array(ASTT_TRANSCRIPT_POST_TYPE, ASTT_EMAIL_POST_TYPE), true)) {
+        return;
+    }
+
+    $title = trim(wp_strip_all_tags($post->post_title));
+    if ('' !== $title && !preg_match('/^auto draft$/i', $title)) {
+        return;
+    }
+
+    $generated = astt_generate_source_title($post);
+    if ('' === $generated) {
+        return;
+    }
+
+    $updating = true;
+    wp_update_post(array(
+        'ID' => $post_id,
+        'post_title' => $generated,
+        'post_name' => sanitize_title($generated),
+    ));
+    $updating = false;
+}
+
+function astt_generate_source_title(WP_Post $post): string
+{
+    $content = trim(wp_strip_all_tags($post->post_content));
+    if (ASTT_EMAIL_POST_TYPE === $post->post_type) {
+        return astt_generate_email_title($post, $content);
+    }
+
+    return astt_generate_transcript_title($post, $content);
+}
+
+function astt_generate_email_title(WP_Post $post, string $content): string
+{
+    $subject = astt_extract_email_header($content, 'Subject');
+    $date = astt_extract_email_header($content, 'Date') ?: astt_transcript_when($post->ID);
+    $from = astt_extract_email_header($content, 'From');
+
+    $parts = array_filter(array(
+        $subject ? 'Email - ' . $subject : 'Email Thread',
+        $from ? 'from ' . astt_compact_email_identity($from) : '',
+        $date ? astt_compact_date_label($date) : '',
+    ));
+
+    return astt_trim_title(implode(' - ', $parts));
+}
+
+function astt_generate_transcript_title(WP_Post $post, string $content): string
+{
+    $when = astt_transcript_when($post->ID);
+    $line = astt_first_meaningful_line($content);
+
+    $parts = array_filter(array(
+        'Transcript',
+        $when ? astt_compact_date_label($when) : '',
+        $line,
+    ));
+
+    return astt_trim_title(implode(' - ', $parts));
+}
+
+function astt_extract_email_header(string $content, string $header): string
+{
+    if (preg_match('/^' . preg_quote($header, '/') . ':\\s*(.+)$/mi', $content, $matches)) {
+        return trim((string) $matches[1]);
+    }
+
+    return '';
+}
+
+function astt_compact_email_identity(string $value): string
+{
+    if (preg_match('/(?:"?([^"<\\n]+)"?\\s*)?<([A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,})>/i', $value, $matches)) {
+        return trim($matches[1]) ?: strtolower($matches[2]);
+    }
+
+    if (preg_match('/\\b([A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,})\\b/i', $value, $matches)) {
+        return strtolower($matches[1]);
+    }
+
+    return astt_trim_title($value, 60);
+}
+
+function astt_compact_date_label(string $value): string
+{
+    $timestamp = strtotime($value);
+    return $timestamp ? wp_date('Y-m-d H:i', $timestamp) : astt_trim_title($value, 32);
+}
+
+function astt_first_meaningful_line(string $content): string
+{
+    foreach (preg_split('/\\R+/', $content) ?: array() as $line) {
+        $line = trim($line);
+        if (strlen($line) < 8 || preg_match('/^(from|to|cc|bcc|date|subject):/i', $line)) {
+            continue;
+        }
+
+        return astt_trim_title($line, 80);
+    }
+
+    return '';
+}
+
+function astt_trim_title(string $value, int $length = 120): string
+{
+    $value = trim(preg_replace('/\\s+/', ' ', wp_strip_all_tags($value)));
+    if (strlen($value) <= $length) {
+        return $value;
+    }
+
+    return rtrim(substr($value, 0, $length - 1)) . '...';
+}
+
 function astt_processing_hash(WP_Post $post): string
 {
     return hash('sha256', wp_json_encode(array(

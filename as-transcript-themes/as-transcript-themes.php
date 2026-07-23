@@ -2,8 +2,8 @@
 /**
  * Plugin Name: AS Transcript Themes
  * Plugin URI: https://github.com/cchatterton/as-transcript-themes/releases/latest
- * Description: Uses the WordPress AI Client to identify durable themes from meeting transcripts.
- * Version: 0.1.0
+ * Description: Uses the WordPress AI Client to identify durable themes from transcripts and email threads.
+ * Version: 0.1.1
  * Requires at least: 7.0
  * Requires PHP: 8.1
  * Update URI: https://github.com/cchatterton/as-transcript-themes
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('ASTT_VERSION', '0.1.0');
+define('ASTT_VERSION', '0.1.1');
 define('ASTT_TRANSCRIPT_POST_TYPE', 'astt_transcript');
 define('ASTT_EMAIL_POST_TYPE', 'astt_email');
 define('ASTT_THEME_POST_TYPE', 'astt_theme');

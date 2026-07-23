@@ -88,7 +88,7 @@ class ASTT_GitHub_Updater
             'requires' => '7.0',
             'requires_php' => '8.1',
             'sections' => array(
-                'description' => __('Uses the WordPress AI Client to identify durable themes from meeting transcripts.', 'as-transcript-themes'),
+                'description' => __('Uses the WordPress AI Client to identify durable themes from transcripts and email threads.', 'as-transcript-themes'),
                 'changelog' => wp_kses_post((string) ($release['body'] ?? '')),
             ),
         );

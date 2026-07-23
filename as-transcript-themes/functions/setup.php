@@ -15,6 +15,7 @@ function astt_boot(): void
     add_action('admin_enqueue_scripts', 'astt_enqueue_admin_assets');
     add_action('admin_notices', 'astt_admin_notices');
     add_action('pre_get_posts', 'astt_sort_theme_admin_list');
+    add_filter('use_block_editor_for_post_type', 'astt_use_classic_editor_for_sources', 10, 2);
     add_filter('manage_' . ASTT_THEME_POST_TYPE . '_posts_columns', 'astt_theme_columns');
     add_action('manage_' . ASTT_THEME_POST_TYPE . '_posts_custom_column', 'astt_theme_column_content', 10, 2);
     add_filter('manage_' . ASTT_CONTACT_POST_TYPE . '_posts_columns', 'astt_contact_columns');
@@ -47,7 +48,7 @@ function astt_register_post_types(): void
         'public' => false,
         'show_ui' => true,
         'show_in_menu' => true,
-        'show_in_rest' => true,
+        'show_in_rest' => false,
         'menu_icon' => 'dashicons-media-text',
         'supports' => array('title', 'editor'),
         'capability_type' => 'post',
@@ -62,8 +63,8 @@ function astt_register_post_types(): void
         ),
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => 'edit.php?post_type=' . ASTT_TRANSCRIPT_POST_TYPE,
-        'show_in_rest' => true,
+        'show_in_menu' => true,
+        'show_in_rest' => false,
         'menu_icon' => 'dashicons-email-alt2',
         'supports' => array('title', 'editor'),
         'capability_type' => 'post',
@@ -78,7 +79,7 @@ function astt_register_post_types(): void
         ),
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => 'edit.php?post_type=' . ASTT_TRANSCRIPT_POST_TYPE,
+        'show_in_menu' => true,
         'show_in_rest' => true,
         'menu_icon' => 'dashicons-lightbulb',
         'supports' => array('title', 'editor', 'excerpt', 'page-attributes'),
@@ -94,7 +95,7 @@ function astt_register_post_types(): void
         ),
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => 'edit.php?post_type=' . ASTT_TRANSCRIPT_POST_TYPE,
+        'show_in_menu' => true,
         'show_in_rest' => true,
         'menu_icon' => 'dashicons-id',
         'supports' => array('title', 'editor'),
@@ -110,10 +111,19 @@ function astt_register_post_types(): void
         ),
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => 'edit.php?post_type=' . ASTT_TRANSCRIPT_POST_TYPE,
+        'show_in_menu' => true,
         'show_in_rest' => true,
         'menu_icon' => 'dashicons-building',
         'supports' => array('title', 'editor'),
         'capability_type' => 'post',
     ));
+}
+
+function astt_use_classic_editor_for_sources(bool $use_block_editor, string $post_type): bool
+{
+    if (in_array($post_type, array(ASTT_TRANSCRIPT_POST_TYPE, ASTT_EMAIL_POST_TYPE), true)) {
+        return false;
+    }
+
+    return $use_block_editor;
 }
