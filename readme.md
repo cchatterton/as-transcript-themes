@@ -1,7 +1,7 @@
 # AS Transcript Themes
 
 Author: AlphaSys  
-Version: 0.2.1<br>
+Version: 0.2.2<br>
 Status: MVP
 
 ## Purpose
@@ -68,3 +68,7 @@ as-transcript-themes/
 - Add stronger semantic matching for merge/evolve behaviour across theme names.
 - Add queued/background processing for very long transcripts.
 - Add manual theme merge tools.
+
+## Controller integration — 0.2.2
+
+Remove independent GitHub update checks and delegate updates to AlphaSys Update Controller. Keep Beta readiness and existing feature settings, package identity and domain restrictions. Previous standalone GitHub update instructions are superseded.

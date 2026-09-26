@@ -27,7 +27,6 @@ function astt_boot(): void
     add_action('manage_' . ASTT_CONTACT_POST_TYPE . '_posts_custom_column', 'astt_contact_column_content', 10, 2);
     add_filter('manage_' . ASTT_ORG_POST_TYPE . '_posts_columns', 'astt_org_columns');
     add_action('manage_' . ASTT_ORG_POST_TYPE . '_posts_custom_column', 'astt_org_column_content', 10, 2);
-    astt_register_github_updater();
 }
 
 function astt_activate(): void
