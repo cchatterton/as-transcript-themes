@@ -3,10 +3,12 @@
  * Plugin Name: AS Transcript Themes
  * Plugin URI: https://github.com/cchatterton/as-transcript-themes/releases/latest
  * Description: Uses the WordPress AI Client to identify topics, themes, and commitments from transcripts and email threads.
- * Version: 0.2.0
+ * Version: 0.2.1
  * Requires at least: 7.0
  * Requires PHP: 8.1
  * Update URI: https://github.com/cchatterton/as-transcript-themes
+ * Allowed Domains: alphasys.com.au
+ * Allow Subdomains: true
  * Author: AlphaSys
  * Author URI: https://alphasys.com.au
  * Text Domain: as-transcript-themes
@@ -16,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('ASTT_VERSION', '0.2.0');
+define('ASTT_VERSION', '0.2.1');
 define('ASTT_TRANSCRIPT_POST_TYPE', 'astt_transcript');
 define('ASTT_EMAIL_POST_TYPE', 'astt_email');
 define('ASTT_THEME_POST_TYPE', 'astt_theme');

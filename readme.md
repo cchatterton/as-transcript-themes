@@ -1,7 +1,7 @@
 # AS Transcript Themes
 
 Author: AlphaSys  
-Version: 0.2.0  
+Version: 0.2.1<br>
 Status: MVP
 
 ## Purpose

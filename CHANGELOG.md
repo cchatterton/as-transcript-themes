@@ -2,6 +2,10 @@
 
 All notable changes to AS Transcript Themes are recorded here.
 
+## 0.2.1 - 2026-09-26
+
+- Declare alphasys.com.au and its subdomains as the allowed catalogue domains in plugin headers. Controller 0.5.0 reads these release headers; localhost remains available for development.
+
 ## 0.2.0 - 2026-07-23
 
 - Renamed the generated discussion layer from Themes to Topics in the WordPress admin UI.
